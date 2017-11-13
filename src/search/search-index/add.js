@@ -57,7 +57,7 @@ export const addPageConcurrent = req =>
  * @returns {IndexTermValue} Updated `currTermVal` with new entry for `indexDoc`.
  */
 function reduceTermValue(currTermVal, indexDoc) {
-    const newTermVal = new Map([[indexDoc.id, { latest: indexDoc.latest }]])
+    const newTermVal = new Map([[indexDoc.id, { latest: undefined }]])
 
     // Either reduce to a new term value or merge with the existing
     return currTermVal == null
