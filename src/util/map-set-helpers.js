@@ -36,7 +36,7 @@ export const containsEmptyVals = iterable =>
  * The Map:
  *  {
  *      category_a: { dogs: 'yep', cats: 'nope' },
- *      category_a: { fish: 'yep', cats: 'yep' },
+ *      category_b: { fish: 'yep', cats: 'yep' },
  *  }
  * would produce a Map like:
  *  { dogs: 'yep', fish: 'yep', cats: 'yep' }
@@ -44,7 +44,7 @@ export const containsEmptyVals = iterable =>
  * @param {Map<any, Map<T, K>>} map
  * @returns {Map<T, K>}
  */
-export const unionNestedMaps = map =>
+export const flattenMaps = map =>
     new Map([...map.values()].reduce((acc, value) => [...acc, ...value], []))
 
 /**

@@ -2,12 +2,13 @@ import {
     containsEmptyVals,
     intersectMaps,
     intersectManyMaps,
-    unionNestedMaps,
+    flattenMaps,
 } from 'src/util/map-set-helpers'
 import {
     boostScores,
     structureSearchResult,
     initLookupByKeys,
+    initSingleLookup,
     keyGen,
     rangeLookup,
     reverseRangeLookup,
@@ -16,6 +17,7 @@ import {
 import { indexQueue } from '.'
 
 const lookupByKeys = initLookupByKeys()
+const singleLookup = initSingleLookup()
 
 const compareByScore = (a, b) => b.score - a.score
 
@@ -121,7 +123,7 @@ async function domainSearch({ domain, bookmarksFilter }) {
     }
 
     // Union the nested 'pageId => scores' Maps for each domain
-    const pageResultsMap = unionNestedMaps(domainValuesMap)
+    const pageResultsMap = flattenMaps(domainValuesMap)
 
     return bookmarksFilter
         ? filterResultsByBookmarks(pageResultsMap)
@@ -147,23 +149,42 @@ async function termSearch({ query, bookmarksFilter }) {
     }
 
     // Union the nested 'pageId => weights' Maps for each term
-    let pageValuesMap = unionNestedMaps(termValuesMap)
+    let pageValuesMap = flattenMaps(termValuesMap)
 
     // Perform intersect of Map on each term value key to AND results
     if (termValuesMap.size > 1) {
         pageValuesMap = intersectManyMaps([...termValuesMap.values()])
     }
 
-    // Merge in boosted docs for other fields
-    const pageResultsMap = new Map([
+    // Merge in boosted values from other indexes
+    let pageResultsMap = new Map([
         ...pageValuesMap,
         ...(await boostedUrlSearch({ query }, pageValuesMap)),
         ...(await boostedTitleSearch({ query }, pageValuesMap)),
     ])
 
-    return bookmarksFilter
-        ? filterResultsByBookmarks(pageResultsMap)
-        : pageResultsMap
+    if (bookmarksFilter) {
+        pageResultsMap = filterResultsByBookmarks(pageResultsMap)
+    }
+
+    // Augment remaining page results with latest time for scoring
+    console.time('augmenting terms')
+    for (const pageId of pageResultsMap.keys()) {
+        const lookupDoc = await singleLookup(pageId)
+
+        if (lookupDoc == null) {
+            console.warn('no lookup doc for', pageId)
+            pageResultsMap.delete(pageId)
+            continue
+        }
+
+        pageResultsMap.set(pageId, { latest: lookupDoc.latest })
+    }
+    console.timeEnd('augmenting terms')
+
+    console.log('yo', pageResultsMap)
+
+    return pageResultsMap
 }
 
 /**
@@ -200,6 +221,7 @@ function formatIdResults(pageResultsMap) {
 }
 
 async function resolveIdResults(pageResultsMap) {
+    console.log(pageResultsMap)
     const pageValuesMap = await lookupByKeys([...pageResultsMap.keys()])
 
     const results = []
@@ -270,6 +292,10 @@ export async function search(
     console.time('filter search')
     const filterPageResultsMap = await filterSearch(query)
     console.timeEnd('filter search')
+
+    console.log('domain', domainPageResultsMap)
+    console.log('term', termPageResultsMap)
+    console.log('filter', filterPageResultsMap)
 
     // Intersect different kinds of results
     const pageResultsMap = intersectResultMaps(
