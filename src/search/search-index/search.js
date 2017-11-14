@@ -8,7 +8,6 @@ import {
     boostScores,
     structureSearchResult,
     initLookupByKeys,
-    initSingleLookup,
     keyGen,
     rangeLookup,
     reverseRangeLookup,
@@ -17,7 +16,6 @@ import {
 import { indexQueue } from '.'
 
 const lookupByKeys = initLookupByKeys()
-const singleLookup = initSingleLookup()
 
 const compareByScore = (a, b) => b.score - a.score
 
@@ -167,23 +165,6 @@ async function termSearch({ query, bookmarksFilter }) {
         pageResultsMap = filterResultsByBookmarks(pageResultsMap)
     }
 
-    // Augment remaining page results with latest time for scoring
-    console.time('augmenting terms')
-    for (const pageId of pageResultsMap.keys()) {
-        const lookupDoc = await singleLookup(pageId)
-
-        if (lookupDoc == null) {
-            console.warn('no lookup doc for', pageId)
-            pageResultsMap.delete(pageId)
-            continue
-        }
-
-        pageResultsMap.set(pageId, { latest: lookupDoc.latest })
-    }
-    console.timeEnd('augmenting terms')
-
-    console.log('yo', pageResultsMap)
-
     return pageResultsMap
 }
 
@@ -221,14 +202,14 @@ function formatIdResults(pageResultsMap) {
 }
 
 async function resolveIdResults(pageResultsMap) {
-    console.log(pageResultsMap)
     const pageValuesMap = await lookupByKeys([...pageResultsMap.keys()])
-
     const results = []
 
     for (const [pageId, props] of pageValuesMap) {
-        const { latest } = pageResultsMap.get(pageId)
-        results.push(structureSearchResult(props, latest))
+        const result = pageResultsMap.get(pageId)
+        results.push(
+            structureSearchResult(props, result.latest || props.latest),
+        )
     }
 
     return results
