@@ -9,3 +9,11 @@ export const STORAGE_KEYS = {
     // Used for timestamp of last search (user needs 1 search in last week to be active)
     SEARCH: 'last-search-timestamp',
 }
+
+export const DAY_IN_MS = 1000 * 60 * 60 * 24
+
+// Cron schedules for periodic analytics tasks
+export const SCHEDULES = {
+    // TODO: Maybe try to make the minutes schedule random per extension somehow (to avoid DDOS analytics server)
+    EVERY_HOUR: '0 0 * * * *',
+}
