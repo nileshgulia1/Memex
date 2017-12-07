@@ -1,5 +1,7 @@
 import Piwik from 'piwik-react-router'
 
+import { SHOULD_TRACK_STORAGE_KEY as SHOULD_TRACK } from 'src/options/privacy/constants'
+
 /**
  * @typedef {Object} EventTrackInfo
  * @property {string} category The event category ('Search', 'Blacklist', etc.).
@@ -26,12 +28,24 @@ class Analytics {
         this.instance = Piwik(args)
     }
 
+    async shouldTrack() {
+        const storage = await browser.storage.local.get({
+            [SHOULD_TRACK]: true,
+        })
+
+        return storage[SHOULD_TRACK]
+    }
+
     /**
      * Track any user-invoked events.
      *
      * @param {EventTrackInfo} eventArgs
      */
-    trackEvent(eventArgs) {
+    async trackEvent(eventArgs) {
+        if (!await this.shouldTrack()) {
+            return
+        }
+
         const data = [
             'trackEvent',
             eventArgs.category,
@@ -48,15 +62,27 @@ class Analytics {
      *
      * @param {LinkTrackInfo} linkArgs
      */
-    trackLink(linkArgs) {
+    async trackLink(linkArgs) {
+        if (!await this.shouldTrack()) {
+            return
+        }
+
         const data = ['trackLink', linkArgs.url, linkArgs.linkType || 'link']
 
         return this.instance.push(data)
     }
 
-    // Default method wrappers
-    connectToHistory(history) {
-        return this.instance.connectToHistory(history)
+    /**
+     * Track user page visits.
+     *
+     * @param {History.Location} loc Location object received from React Router.
+     */
+    async trackPage(loc) {
+        if (!await this.shouldTrack()) {
+            return
+        }
+
+        this.instance.track(loc)
     }
 }
 
