@@ -1,6 +1,7 @@
 import Piwik from 'piwik-react-router'
 
 import { SHOULD_TRACK_STORAGE_KEY as SHOULD_TRACK } from 'src/options/privacy/constants'
+import { STORAGE_KEYS } from './constants'
 
 /**
  * @typedef {Object} EventTrackInfo
@@ -17,6 +18,8 @@ import { SHOULD_TRACK_STORAGE_KEY as SHOULD_TRACK } from 'src/options/privacy/co
  */
 
 class Analytics {
+    static DAY_IN_MS = 1000 * 60 * 60 * 24
+
     instance
 
     /**
@@ -83,6 +86,29 @@ class Analytics {
         }
 
         this.instance.track(loc)
+    }
+
+    /**
+     * Sends a custom non-user-invoked event to signify an installed extension.
+     */
+    async installPing() {
+        const {
+            [STORAGE_KEYS.DAILY_PING]: lastPing,
+        } = await browser.storage.local.get({
+            [STORAGE_KEYS.DAILY_PING]: 0,
+        })
+
+        // If at least a day since the last install ping, do it again and update timestamp
+        if (Date.now() - lastPing >= Analytics.DAY_IN_MS) {
+            await this.trackEvent({
+                category: 'Periodic',
+                action: 'Install ping',
+            })
+
+            await browser.storage.local.set({
+                [STORAGE_KEYS.DAILY_PING]: Date.now(),
+            })
+        }
     }
 }
 
