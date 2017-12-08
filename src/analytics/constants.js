@@ -14,6 +14,6 @@ export const DAY_IN_MS = 1000 * 60 * 60 * 24
 
 // Cron schedules for periodic analytics tasks
 export const SCHEDULES = {
-    // TODO: Maybe try to make the minutes schedule random per extension somehow (to avoid DDOS analytics server)
-    EVERY_HOUR: '0 0 * * * *',
+    // Generates a cron schedule to run some time past the hour, every hour
+    EVERY_HOUR: () => `0 ${Math.floor(Math.random() * 60)} * * * *`,
 }

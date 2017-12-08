@@ -5,7 +5,7 @@ import { STORAGE_KEYS, SCHEDULES, DAY_IN_MS } from '../constants'
 
 const jobs = [
     new CronJob({
-        cronTime: SCHEDULES.EVERY_HOUR,
+        cronTime: SCHEDULES.EVERY_HOUR(),
         start: true,
         /**
          * Sends a custom non-user-invoked event to signify an installed extension.
@@ -32,7 +32,7 @@ const jobs = [
         },
     }),
     new CronJob({
-        cronTime: SCHEDULES.EVERY_HOUR,
+        cronTime: SCHEDULES.EVERY_HOUR(),
         start: true,
         /**
          * Sends a custom non-user-invoked event to signifiy user activity based on time since last search.
