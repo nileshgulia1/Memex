@@ -19,12 +19,18 @@ const Filters = ({ showOnlyBookmarks, onShowOnlyBookmarksChange }) => (
                 </span>
             </label>
         </div>
+        <div className={localStyles.searchFilter}>
+            <input
+                type="search"
+                name="search through domain-names"
+                id="domain-names"
+                onChange={onShowOnlyBookmarksChange}
+            />
+        </div>
     </div>
 )
-
 Filters.propTypes = {
     showOnlyBookmarks: PropTypes.bool.isRequired,
     onShowOnlyBookmarksChange: PropTypes.func.isRequired,
 }
-
 export default Filters
